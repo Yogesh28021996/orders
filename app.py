@@ -8,13 +8,11 @@ from oauth2client.service_account import ServiceAccountCredentials
 # GOOGLE SHEETS SETUP
 # ===============================
 
-# Scope for Sheets + Drive
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
 ]
 
-# ✅✅✅ This is the only correct way — NO .to_json()!
 service_account_info = st.secrets["google_service_account"]
 
 creds = ServiceAccountCredentials.from_json_keyfile_dict(
@@ -26,7 +24,7 @@ client = gspread.authorize(creds)
 sheet = client.open("orders").sheet1
 
 # ===============================
-# MENU & UI SAME AS BEFORE
+# FULL MENU
 # ===============================
 
 MENU = {
@@ -40,57 +38,127 @@ MENU = {
     "Chicken cheese burger": 130,
     "Mexican chicken burger": 130,
     "BBQ chicken burger": 150,
+    "French Fries": 70,
+    "Peri Peri Fries": 80,
+    "Fried Mushroom": 100,
+    "Fresh Garden Sandwich": 70,
+    "Veg Cheese Sandwich": 70,
+    "Fried Mushroom Sandwich": 110,
+    "Creamy Mushroom Sandwich": 140,
+    "Classic Chicken Sandwich": 100,
+    "Chicken Cheese Sandwich": 110,
+    "Hot Garlic Chicken Sandwich": 130,
+    "Mint Lime Mojito": 59,
+    "Virgin Lychee Mojito": 79,
+    "Green Apple Mojito": 79,
+    "Frozen Strawberry Mojito": 79,
+    "Blue Sea Mojito": 99,
+    "Pina Colada": 99,
+    "Bubble Gum Mojito": 99,
+    "Hot garlic wings (4pc)": 120,
+    "Nashville hot chicken strips (4pc)": 140,
+    "Creamy Mushroom": 140,
+    "Mac & Cheese": 99,
+    "Buffalo Wings": 140,
+    "Mac & Cheese with Chicken & Fries": 179,
+    "Fish & Chips with Spicy Dip": 179,
+    "Lays with Fiery Chicken": 179,
+    "6 pc hot and crispy bucket chicken": 179,
+    "12 pc hot and crispy bucket chicken": 299,
+    "The Hot Chick Feast": 229,
+    "Hot Chick Dinner Platter": 299,
+    "Spicy Main Chick Burger": 150,
+    "Cheesy Side Chick Burger": 150,
+    "Sizzlin' Hot Chick Burger": 150,
+    "The Flirtini Chick (Mojito)": 99,
+    "Thick Thighs": 200,
+    "The Chick Stack": 140,
+    "Chicks 'N' Fries": 100,
+    "Garlic Tease": 150,
 }
 
-st.title("🔥 The Hot Chick - Order Now (Google Sheets)")
+# ===============================
+# STREAMLIT UI
+# ===============================
 
+# Optional logo image (uncomment if you have a URL)
+# st.image("https://your-logo-url.png", width=200)
+
+st.title("🍗🔥 The Hot Chick — Order Your Feast!")
+
+st.markdown(
+    """
+    <style>
+    .stButton button {
+        background-color: #FF4B4B;
+        color: white;
+        border-radius: 10px;
+        height: 3em;
+        width: 100%;
+        font-size: 18px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# Initialize cart
 if 'cart' not in st.session_state:
     st.session_state.cart = []
 
-item = st.selectbox("Select Item", list(MENU.keys()))
-price = MENU[item]
+# Layout: 2 columns
+col1, col2 = st.columns(2)
 
-if isinstance(price, list):
-    portion = st.radio(
-        "Select Portion",
-        [f"Option {i+1}: ₹{p}" for i, p in enumerate(price)]
-    )
-    portion_index = int(portion.split()[1].replace(":", "")) - 1
-    unit_price = price[portion_index]
-    portion_note = f"(Portion {portion_index+1})"
-else:
-    unit_price = price
-    portion_note = ""
+with col1:
+    item = st.selectbox("🍔 Choose Your Item:", list(MENU.keys()))
 
-qty = st.selectbox("Quantity", list(range(1, 11)))
-item_total = qty * unit_price
+    price = MENU[item]
 
-st.write(f"### Item Total: ₹{item_total}")
-
-if st.button("Add Item"):
-    st.session_state.cart.append({
-        "item": item,
-        "portion_note": portion_note,
-        "qty": qty,
-        "unit_price": unit_price,
-        "item_total": item_total
-    })
-    st.success(f"✅ Added {qty} x {item} {portion_note}")
-
-if st.session_state.cart:
-    st.write("## 🛒 Current Order Summary")
-    total_order_amount = sum(i['item_total'] for i in st.session_state.cart)
-    for idx, i in enumerate(st.session_state.cart, 1):
-        st.write(
-            f"{idx}. {i['qty']} x {i['item']} {i['portion_note']} = ₹{i['item_total']}"
+    if isinstance(price, list):
+        portion = st.radio(
+            "🍗 Portion Size:",
+            [f"Option {i+1}: ₹{p}" for i, p in enumerate(price)]
         )
-    st.write(f"### 🔢 Current Total: ₹{total_order_amount}")
+        portion_index = int(portion.split()[1].replace(":", "")) - 1
+        unit_price = price[portion_index]
+        portion_note = f"(Portion {portion_index+1})"
+    else:
+        unit_price = price
+        portion_note = ""
 
-payment_method = st.selectbox("Select Payment Method", ["Cash", "UPI"])
+    qty = st.slider("🔢 Quantity", 1, 10, 1)
+    item_total = qty * unit_price
 
-if st.button("Create Order"):
+    st.info(f"💰 **Item Total:** ₹{item_total}")
+
+    if st.button("➕ Add to Cart"):
+        st.session_state.cart.append({
+            "item": item,
+            "portion_note": portion_note,
+            "qty": qty,
+            "unit_price": unit_price,
+            "item_total": item_total
+        })
+        st.success(f"✅ Added {qty} x {item} {portion_note}")
+
+with col2:
+    if st.session_state.cart:
+        st.subheader("🛒 Your Cart")
+        total_order_amount = sum(i['item_total'] for i in st.session_state.cart)
+        for idx, i in enumerate(st.session_state.cart, 1):
+            st.write(
+                f"{idx}. {i['qty']} x {i['item']} {i['portion_note']} = ₹{i['item_total']}"
+            )
+        st.write(f"### 🧾 Total: ₹{total_order_amount}")
+    else:
+        st.write("🛒 Your cart is empty.")
+
+payment_method = st.radio("💳 Payment Method", ["Cash", "UPI"])
+
+# Order button at bottom
+if st.button("✅ Place Order"):
     if not st.session_state.cart:
-        st.warning("⚠️ Add at least one item.")
+        st.warning("⚠️ Add some items first!")
     else:
         total_order_amount = sum(i['item_total'] for i in st.session_state.cart)
         now = datetime.now()
@@ -108,14 +176,15 @@ if st.button("Create Order"):
             payment_method
         ])
 
-        st.success(f"🎉 Order Created! Order ID: `{order_id}`")
+        st.balloons()
+        st.success(f"🎉 Order Placed! Order ID: `{order_id}`")
         st.write(f"**Date & Time:** {order_datetime}")
-        st.write("## ✅ Final Order Details")
+        st.write("## 📝 Order Details")
         for idx, i in enumerate(st.session_state.cart, 1):
             st.write(
                 f"{idx}. {i['qty']} x {i['item']} {i['portion_note']} = ₹{i['item_total']}"
             )
-        st.write(f"### 🧾 Total Order Amount: ₹{total_order_amount}")
+        st.write(f"### 🧾 Total Amount: ₹{total_order_amount}")
         st.write(f"**Payment Method:** {payment_method}")
 
         st.session_state.cart = []
