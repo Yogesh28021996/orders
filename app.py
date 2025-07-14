@@ -81,18 +81,23 @@ MENU = {
 # STREAMLIT UI
 # ===============================
 
+# Optional logo
+# st.image("https://your-logo-url.png", width=200)
+
+# ✅ Title stays in one line
 st.markdown(
     "<h1 style='white-space: nowrap;'>🍗🔥 The Hot Chick — Order Your Feast!</h1>",
     unsafe_allow_html=True
 )
 
+# ✅ Fix button hover styling
 st.markdown(
     """
     <style>
     .stButton button {
         background-color: #FF4B4B;
         color: white;
-        border-radius: 8px;
+        border-radius: 10px;
         height: 3em;
         width: 100%;
         font-size: 18px;
@@ -100,17 +105,6 @@ st.markdown(
     }
     .stButton button:hover {
         background-color: #e63946;
-    }
-    .small-button button {
-        font-size: 12px !important;
-        padding: 0.2em 0.5em;
-        height: auto;
-        width: auto;
-        border-radius: 5px;
-        background-color: #888;
-    }
-    .small-button button:hover {
-        background-color: #555;
         color: white;
     }
     </style>
@@ -160,31 +154,11 @@ with col2:
     if st.session_state.cart:
         st.subheader("🛒 Your Cart")
         total_order_amount = sum(i['item_total'] for i in st.session_state.cart)
-
-        remove_indexes = []
-
-        for idx, i in enumerate(st.session_state.cart):
-            colA, colB = st.columns([8, 1])
-            with colA:
-                st.write(
-                    f"{idx+1}. {i['qty']} x {i['item']} {i['portion_note']} = ₹{i['item_total']}"
-                )
-            with colB:
-                if st.button("X", key=f"remove_{idx}"):
-                    remove_indexes.append(idx)
-
-        # Safe removal after loop
-        if remove_indexes:
-            for idx in sorted(remove_indexes, reverse=True):
-                if idx < len(st.session_state.cart):
-                    st.session_state.cart.pop(idx)
-            st.experimental_rerun()
-
+        for idx, i in enumerate(st.session_state.cart, 1):
+            st.write(
+                f"{idx}. {i['qty']} x {i['item']} {i['portion_note']} = ₹{i['item_total']}"
+            )
         st.write(f"### 🧾 Total: ₹{total_order_amount}")
-
-        if st.button("🗑️ Clear Cart"):
-            st.session_state.cart = []
-            st.experimental_rerun()
     else:
         st.write("🛒 Your cart is empty.")
 
