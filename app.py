@@ -81,11 +81,16 @@ MENU = {
 # STREAMLIT UI
 # ===============================
 
-# Optional logo image (uncomment if you have a URL)
+# Optional logo
 # st.image("https://your-logo-url.png", width=200)
 
-st.title("🍗🔥 The Hot Chick — Order Your Feast!")
+# ✅ Title stays in one line
+st.markdown(
+    "<h1 style='white-space: nowrap;'>🍗🔥 The Hot Chick — Order Your Feast!</h1>",
+    unsafe_allow_html=True
+)
 
+# ✅ Fix button hover styling
 st.markdown(
     """
     <style>
@@ -96,17 +101,21 @@ st.markdown(
         height: 3em;
         width: 100%;
         font-size: 18px;
+        transition: 0.3s;
+    }
+    .stButton button:hover {
+        background-color: #e63946;
+        color: white;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# Initialize cart
+# Init cart
 if 'cart' not in st.session_state:
     st.session_state.cart = []
 
-# Layout: 2 columns
 col1, col2 = st.columns(2)
 
 with col1:
@@ -126,7 +135,7 @@ with col1:
         unit_price = price
         portion_note = ""
 
-    qty = st.slider("🔢 Quantity", 1, 10, 1)
+    qty = st.number_input("🔢 Quantity", min_value=1, max_value=100, value=1, step=1)
     item_total = qty * unit_price
 
     st.info(f"💰 **Item Total:** ₹{item_total}")
@@ -155,7 +164,6 @@ with col2:
 
 payment_method = st.radio("💳 Payment Method", ["Cash", "UPI"])
 
-# Order button at bottom
 if st.button("✅ Place Order"):
     if not st.session_state.cart:
         st.warning("⚠️ Add some items first!")
