@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import datetime
 import random
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
+from streamlit.connections import GSheetsConnection
 
 # ===============================
 # STREAMLIT CONFIG
