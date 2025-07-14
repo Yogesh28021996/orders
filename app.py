@@ -3,28 +3,32 @@ from datetime import datetime
 import random
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import json
 
 # ===============================
-# GOOGLE SHEETS SETUP
+# GOOGLE SHEETS SETUP (from secrets)
 # ===============================
 
-# Define scope for Google Sheets & Drive
+# Scope for Sheets & Drive API
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
 ]
 
-# Load Service Account credentials
-creds = ServiceAccountCredentials.from_json_keyfile_name(
-    "service_account.json",  # <-- Your JSON key file
+# Load service account info from secrets
+service_account_info = st.secrets["google_service_account"]
+
+# Use from_json_keyfile_dict instead of file
+creds = ServiceAccountCredentials.from_json_keyfile_dict(
+    json.loads(service_account_info.to_json()),
     scope
 )
 
-# Authorize gspread client
+# Authorize gspread
 client = gspread.authorize(creds)
 
-# Open Google Sheet (by name)
-sheet = client.open("orders").sheet1
+# Open Google Sheet by name
+sheet = client.open("orders").sheet1  # make sure the sheet name matches
 
 # ===============================
 # MENU
@@ -47,9 +51,9 @@ MENU = {
 # STREAMLIT UI
 # ===============================
 
-st.title("🔥 The Hot Chick - Order Now (using gspread)")
+st.title("🔥 The Hot Chick - Order Now (Google Sheets via secrets)")
 
-# Session cart
+# Initialize session cart
 if 'cart' not in st.session_state:
     st.session_state.cart = []
 
@@ -111,7 +115,7 @@ if st.button("Create Order"):
             f"{i['qty']} x {i['item']} {i['portion_note']}" for i in st.session_state.cart
         ])
 
-        # ✅ Save to Google Sheets
+        # Append row to Google Sheet
         sheet.append_row([
             order_id,
             order_datetime,
