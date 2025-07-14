@@ -86,7 +86,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ✅ Fix button hover styling and small remove buttons
 st.markdown(
     """
     <style>
@@ -101,14 +100,13 @@ st.markdown(
     }
     .stButton button:hover {
         background-color: #e63946;
-        color: white;
     }
     .small-button button {
         font-size: 12px !important;
-        padding: 0.25em 0.5em;
+        padding: 0.2em 0.5em;
         height: auto;
         width: auto;
-        border-radius: 6px;
+        border-radius: 5px;
         background-color: #888;
     }
     .small-button button:hover {
@@ -163,6 +161,8 @@ with col2:
         st.subheader("🛒 Your Cart")
         total_order_amount = sum(i['item_total'] for i in st.session_state.cart)
 
+        remove_indexes = []
+
         for idx, i in enumerate(st.session_state.cart):
             colA, colB = st.columns([8, 1])
             with colA:
@@ -171,28 +171,14 @@ with col2:
                 )
             with colB:
                 if st.button("X", key=f"remove_{idx}"):
+                    remove_indexes.append(idx)
+
+        # Safe removal after loop
+        if remove_indexes:
+            for idx in sorted(remove_indexes, reverse=True):
+                if idx < len(st.session_state.cart):
                     st.session_state.cart.pop(idx)
-                    st.experimental_rerun()
-                # Add class for small style
-                st.markdown(
-                    f"""
-                    <style>
-                    div[data-testid="stButton"][key="remove_{idx}"] button {{
-                        background-color: #999;
-                        color: white;
-                        font-size: 12px;
-                        padding: 0 0.4em;
-                        border-radius: 5px;
-                        height: auto;
-                        width: auto;
-                    }}
-                    div[data-testid="stButton"][key="remove_{idx}"] button:hover {{
-                        background-color: #666;
-                    }}
-                    </style>
-                    """,
-                    unsafe_allow_html=True
-                )
+            st.experimental_rerun()
 
         st.write(f"### 🧾 Total: ₹{total_order_amount}")
 
