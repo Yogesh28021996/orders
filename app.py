@@ -3,35 +3,30 @@ from datetime import datetime
 import random
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import json
 
 # ===============================
-# GOOGLE SHEETS SETUP (from secrets)
+# GOOGLE SHEETS SETUP
 # ===============================
 
-# Scope for Sheets & Drive API
+# Scope for Sheets + Drive
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
 ]
 
-# Load service account info from secrets
+# ✅✅✅ This is the only correct way — NO .to_json()!
 service_account_info = st.secrets["google_service_account"]
 
-# Use from_json_keyfile_dict instead of file
 creds = ServiceAccountCredentials.from_json_keyfile_dict(
-    json.loads(service_account_info.to_json()),
+    service_account_info,
     scope
 )
 
-# Authorize gspread
 client = gspread.authorize(creds)
-
-# Open Google Sheet by name
-sheet = client.open("orders").sheet1  # make sure the sheet name matches
+sheet = client.open("orders").sheet1
 
 # ===============================
-# MENU
+# MENU & UI SAME AS BEFORE
 # ===============================
 
 MENU = {
@@ -47,17 +42,11 @@ MENU = {
     "BBQ chicken burger": 150,
 }
 
-# ===============================
-# STREAMLIT UI
-# ===============================
+st.title("🔥 The Hot Chick - Order Now (Google Sheets)")
 
-st.title("🔥 The Hot Chick - Order Now (Google Sheets via secrets)")
-
-# Initialize session cart
 if 'cart' not in st.session_state:
     st.session_state.cart = []
 
-# Select item
 item = st.selectbox("Select Item", list(MENU.keys()))
 price = MENU[item]
 
@@ -78,7 +67,6 @@ item_total = qty * unit_price
 
 st.write(f"### Item Total: ₹{item_total}")
 
-# Add to cart
 if st.button("Add Item"):
     st.session_state.cart.append({
         "item": item,
@@ -89,7 +77,6 @@ if st.button("Add Item"):
     })
     st.success(f"✅ Added {qty} x {item} {portion_note}")
 
-# Cart summary
 if st.session_state.cart:
     st.write("## 🛒 Current Order Summary")
     total_order_amount = sum(i['item_total'] for i in st.session_state.cart)
@@ -99,23 +86,20 @@ if st.session_state.cart:
         )
     st.write(f"### 🔢 Current Total: ₹{total_order_amount}")
 
-# Payment method
 payment_method = st.selectbox("Select Payment Method", ["Cash", "UPI"])
 
-# Create order
 if st.button("Create Order"):
     if not st.session_state.cart:
         st.warning("⚠️ Add at least one item.")
     else:
         total_order_amount = sum(i['item_total'] for i in st.session_state.cart)
         now = datetime.now()
-        order_id = f"HC-{now.strftime('%Y%m%d%H%M%S')}-{random.randint(1000,9999)}"
+        order_id = f"HC-{now.strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
         order_datetime = now.strftime("%Y-%m-%d %H:%M:%S")
         items_summary = "; ".join([
             f"{i['qty']} x {i['item']} {i['portion_note']}" for i in st.session_state.cart
         ])
 
-        # Append row to Google Sheet
         sheet.append_row([
             order_id,
             order_datetime,
@@ -134,5 +118,4 @@ if st.button("Create Order"):
         st.write(f"### 🧾 Total Order Amount: ₹{total_order_amount}")
         st.write(f"**Payment Method:** {payment_method}")
 
-        # Clear cart
         st.session_state.cart = []
