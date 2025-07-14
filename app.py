@@ -1,14 +1,30 @@
 import streamlit as st
 from datetime import datetime
 import random
-import pandas as pd
-from streamlit.connections import GSheetsConnection
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 # ===============================
-# STREAMLIT CONFIG
+# GOOGLE SHEETS SETUP
 # ===============================
 
-st.title("🔥 The Hot Chick - Order Now (with Google Sheets)")
+# Define scope for Google Sheets & Drive
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
+
+# Load Service Account credentials
+creds = ServiceAccountCredentials.from_json_keyfile_name(
+    "service_account.json",  # <-- Your JSON key file
+    scope
+)
+
+# Authorize gspread client
+client = gspread.authorize(creds)
+
+# Open Google Sheet (by name)
+sheet = client.open("orders").sheet1
 
 # ===============================
 # MENU
@@ -28,16 +44,16 @@ MENU = {
 }
 
 # ===============================
-# Session state for cart
+# STREAMLIT UI
 # ===============================
 
+st.title("🔥 The Hot Chick - Order Now (using gspread)")
+
+# Session cart
 if 'cart' not in st.session_state:
     st.session_state.cart = []
 
-# ===============================
-# ITEM SELECTION
-# ===============================
-
+# Select item
 item = st.selectbox("Select Item", list(MENU.keys()))
 price = MENU[item]
 
@@ -58,6 +74,7 @@ item_total = qty * unit_price
 
 st.write(f"### Item Total: ₹{item_total}")
 
+# Add to cart
 if st.button("Add Item"):
     st.session_state.cart.append({
         "item": item,
@@ -68,10 +85,7 @@ if st.button("Add Item"):
     })
     st.success(f"✅ Added {qty} x {item} {portion_note}")
 
-# ===============================
-# CART SUMMARY
-# ===============================
-
+# Cart summary
 if st.session_state.cart:
     st.write("## 🛒 Current Order Summary")
     total_order_amount = sum(i['item_total'] for i in st.session_state.cart)
@@ -81,16 +95,10 @@ if st.session_state.cart:
         )
     st.write(f"### 🔢 Current Total: ₹{total_order_amount}")
 
-# ===============================
-# PAYMENT METHOD
-# ===============================
-
+# Payment method
 payment_method = st.selectbox("Select Payment Method", ["Cash", "UPI"])
 
-# ===============================
-# CREATE ORDER + SAVE TO SHEET
-# ===============================
-
+# Create order
 if st.button("Create Order"):
     if not st.session_state.cart:
         st.warning("⚠️ Add at least one item.")
@@ -103,26 +111,14 @@ if st.button("Create Order"):
             f"{i['qty']} x {i['item']} {i['portion_note']}" for i in st.session_state.cart
         ])
 
-        # ✅ Connect to Google Sheets
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        # 🔄 Read existing data
-        existing_df = conn.read(worksheet="Orders")
-        if existing_df is None or existing_df.empty:
-            existing_df = pd.DataFrame(columns=[
-                "OrderID", "OrderDateTime", "ItemsSummary", "TotalAmount", "PaymentMethod"
-            ])
-
-        # Append new order
-        new_row = pd.DataFrame([{
-            "OrderID": order_id,
-            "OrderDateTime": order_datetime,
-            "ItemsSummary": items_summary,
-            "TotalAmount": total_order_amount,
-            "PaymentMethod": payment_method
-        }])
-
-        updated_df = pd.concat([existing_df, new_row], ignore_index=True)
-        conn.update(worksheet="Orders", data=updated_df)
+        # ✅ Save to Google Sheets
+        sheet.append_row([
+            order_id,
+            order_datetime,
+            items_summary,
+            total_order_amount,
+            payment_method
+        ])
 
         st.success(f"🎉 Order Created! Order ID: `{order_id}`")
         st.write(f"**Date & Time:** {order_datetime}")
